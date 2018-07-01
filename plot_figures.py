@@ -23,6 +23,9 @@ def plot_logmel(args):
     # Paths
     audio_names = os.listdir(audio_dir)
     
+    import crash
+    asdf
+    
     # Feature extractor
     feature_extractor = LogMelExtractor(sample_rate=sample_rate, 
                                         window_size=window_size, 
