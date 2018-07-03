@@ -16,7 +16,7 @@ The dataset contains 10 classes of audio scenes, recorded with Device A, B and C
 
 The log mel spectrogram of the scenes are shown below:
 
-![alt text](appendix/logmel.png)
+![alt text](appendixes/logmel.png)
 
 
 ### Result
