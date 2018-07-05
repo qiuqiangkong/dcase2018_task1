@@ -18,10 +18,30 @@ The log mel spectrogram of the scenes are shown below:
 
 ![alt text](appendixes/logmel.png)
 
+### Run the code
+
+Install dependent packages. If you are using conda, simply run:
+$ conda env create -f environment.yml
+$ conda activate py3_dcase2018_task1
+
+Run the commands in runme.sh line by line, including: 
+(1) Modify the paths of data and your workspace
+(2) Extract features
+(3) Train model
+(4) Evaluation
 
 ### Result
 
+We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 60 ms / iteration on a GTX Titan X GPU. You may get results similar to:
 
+Subtask A:
+
+|               | Device A |
+|:-------------:|:--------:|
+| avg. accuracy |   68.2%  |
+
+Confusion matrix:
+![alt text](appendixes/subtask_a_confusion_matrix.png)
 
 ### Extra link
 

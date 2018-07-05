@@ -4,8 +4,6 @@ overlap = 672   # So that there are 320 frames in an audio clip
 seq_len = 320
 mel_bins = 64
 
-# fold_for_validation = 0     # Use the 0-th fold for validation
-
 labels = ['airport', 'bus', 'metro', 'metro_station', 'park', 'public_square', 
           'shopping_mall', 'street_pedestrian', 'street_traffic', 'tram']
 
