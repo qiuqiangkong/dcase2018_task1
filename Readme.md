@@ -41,7 +41,7 @@ Subtask A:
 | avg. accuracy |   68.2%  |
 
 Confusion matrix:
-![alt text](appendixes/subtask_a_confusion_matrix.png, appendixes/subtask_a_confusion_matrix.png)
+![alt text](appendixes/subtask_a_confusion_matrix.png, width="100")
 
 ### Extra link
 
