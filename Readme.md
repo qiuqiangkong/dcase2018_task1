@@ -59,7 +59,9 @@ Confusion matrix:
 <img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_b_confusion_matrix_device_a.png" width="400"><img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_b_confusion_matrix_device_b.png" width="400">
 <img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_b_confusion_matrix_device_c.png" width="400">
 
+## Summary
+This codebase provides a convolutional neural network (CNN) for DCASE 2018 challenge Task 1. 
 
-### Extra link
+### External link
 
 The official baseline system implemented using Keras can be found https://github.com/DCASE-REPO/dcase2018_baseline
