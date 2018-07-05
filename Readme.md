@@ -32,18 +32,29 @@ Run the commands in runme.sh line by line, including:
 
 ### Result
 
-We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 60 ms / iteration on a GTX Titan X GPU. You may get results similar to:
+We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 100 ms / iteration on a GTX Titan X GPU. The model is trained for 3000 iterations.
 
 Subtask A:
 
-|               | Device A |
-|:-------------:|:--------:|
-| avg. accuracy |   68.2%  |
+|                   | Device A |
+|:-----------------:|:--------:|
+| averaged accuracy |   68.2%  |
 
 Confusion matrix:
 ![alt text](appendixes/subtask_a_confusion_matrix.png width="100")
 
-<img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix.png" width="400"><img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix.png" width="400">
+<img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix.png" width="600">
+
+Subtask B:
+
+|                   | Device A | Device B | Device C |
+|:-----------------:|:--------:|----------|----------|
+| averaged accuracy |   67.4%  | 59.4%    | 57.2%    |
+
+Confusion matrix:
+<img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_a.png" width="500"><img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_b.png" width="500">
+<img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_c.png" width="500">
+
 
 ### Extra link
 

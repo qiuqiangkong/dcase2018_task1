@@ -177,7 +177,7 @@ def calculate_confusion_matrix(target, predict, classes_num):
     return confusion_matrix
 
 
-def plot_confusion_matrix(confusion_matrix, labels, values):
+def plot_confusion_matrix(confusion_matrix, title, labels, values):
     """Plot confusion matrix.
 
     Inputs:
@@ -205,6 +205,7 @@ def plot_confusion_matrix(confusion_matrix, labels, values):
     for n in range(len(values)):
         plt.text(n - 0.4, n, '{:.2f}'.format(values[n]), color='yellow')
 
+    plt.title(title)
     plt.xlabel('Predicted')
     plt.ylabel('Target')
     plt.tight_layout()

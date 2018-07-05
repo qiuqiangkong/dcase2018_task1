@@ -256,7 +256,7 @@ def inference_validation(args):
         (output, target) = forward(model=model,
                                    gen=gen,
                                    data_type='validate',
-                                   devices=devices,
+                                   devices=device,
                                    max_iteration=-1,
                                    cuda=cuda)
 
@@ -279,6 +279,7 @@ def inference_validation(args):
         # Plot confusion matrix
         plot_confusion_matrix(
             confusion_matrix,
+            title='Device {}'.format(device.upper()), 
             labels=labels,
             values=class_wise_acc)
 
