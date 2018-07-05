@@ -2,7 +2,7 @@
 
 DCASE 2018 Task 1 acoustic scene classification is a challenge to classifiy a 10 second audio clip to one of 10 classes such as 'airport', 'urban park', etc. We provide a convolutional neural network (CNN) baseline system implemented with PyTorch in this code base. More details about this challenge can be found http://dcase.community/challenge2018/task-acoustic-scene-classification
 
-### DATASET
+## DATASET
 
 The dataset is downloadable from http://dcase.community/challenge2018/task-acoustic-scene-classification
 
@@ -18,7 +18,7 @@ The log mel spectrogram of the scenes are shown below:
 
 ![alt text](appendixes/logmel.png)
 
-### Run the code
+## Run the code
 
 Install dependent packages. If you are using conda, simply run:
 $ conda env create -f environment.yml
@@ -30,11 +30,13 @@ Run the commands in runme.sh line by line, including:
 (3) Train model
 (4) Evaluation
 
-### Result
+## Result
 
-We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 100 ms / iteration on a GTX Titan X GPU. The model is trained for 3000 iterations.
+We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 100 ms / iteration on a GTX Titan X GPU. The model is trained for 3000 iterations. The result is shown below. 
 
-Subtask A:
+### Subtask A
+
+Averaged accuracy over 10 classes:
 
 |                   | Device A |
 |:-----------------:|:--------:|
@@ -44,7 +46,9 @@ Confusion matrix:
 
 <img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix.png" width="600">
 
-Subtask B:
+### Subtask B
+
+Averaged accuracy over 10 classes of device A, B and C:
 
 |                   | Device A | Device B | Device C |
 |:-----------------:|:--------:|----------|----------|
