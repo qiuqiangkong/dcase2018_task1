@@ -52,7 +52,9 @@ Subtask B:
 | averaged accuracy |   67.4%  | 59.4%    | 57.2%    |
 
 Confusion matrix:
-<img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_a.png" width="500"><img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_b.png" width="500">
+
+<img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_b_confusion_matrix_device_a.png" width="500"><img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_b.png" width="500">
+
 <img src="https://github.com/qiuqiangkong/dcase2018_task1/blob/dev/appendixes/subtask_a_confusion_matrix_device_c.png" width="500">
 
 
