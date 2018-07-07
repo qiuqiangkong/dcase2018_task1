@@ -103,11 +103,17 @@ def train(args):
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
                                  'data.h5')
 
-    dev_train_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
-                                 'fold1_train.txt')
-                                 
-    dev_validate_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
-                                    'fold1_evaluate.txt')
+    if validation:
+        
+        dev_train_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
+                                    'fold1_train.txt')
+                                    
+        dev_validate_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
+                                        'fold1_evaluate.txt')
+                                        
+    else:
+        dev_train_csv = None
+        dev_validate_csv = None
 
     models_dir = os.path.join(workspace, 'models', subdir, filename,
                               'validation={}'.format(validation))
@@ -289,23 +295,26 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers(dest='mode')
 
     parser_train = subparsers.add_parser('train')
-    parser_train.add_argument('--dataset_dir', type=str)
-    parser_train.add_argument('--subdir', type=str)
-    parser_train.add_argument('--workspace', type=str)
-    parser_train.add_argument('--validation', type=str)
-    parser_train.add_argument(
-        '--mini_data',
-        action='store_true',
-        default=False)
+    parser_train.add_argument('--dataset_dir', type=str, required=True)
+    parser_train.add_argument('--subdir', type=str, required=True)
+    parser_train.add_argument('--workspace', type=str, required=True)
+    parser_train.add_argument('--validation', action='store_true', 
+                              default=True)
     parser_train.add_argument('--cuda', action='store_true', default=True)
-
+    parser_train.add_argument('--mini_data', action='store_true',
+                              default=False)
+    
     parser_inference_validation = subparsers.add_parser('inference_validation')
-    parser_inference_validation.add_argument('--dataset_dir', type=str)
-    parser_inference_validation.add_argument('--subdir', type=str)
-    parser_inference_validation.add_argument('--workspace', type=str)
-    parser_inference_validation.add_argument('--iteration', type=int)
-    parser_inference_validation.add_argument(
-        '--cuda', action='store_true', default=True)
+    parser_inference_validation.add_argument('--dataset_dir', type=str, 
+                                             required=True)
+    parser_inference_validation.add_argument('--subdir', type=str, 
+                                             required=True)
+    parser_inference_validation.add_argument('--workspace', type=str, 
+                                             required=True)
+    parser_inference_validation.add_argument('--iteration', type=int, 
+                                             required=True)
+    parser_inference_validation.add_argument('--cuda', action='store_true', 
+                                             default=True)
 
     args = parser.parse_args()
 
