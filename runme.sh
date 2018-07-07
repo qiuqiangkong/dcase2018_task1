@@ -18,14 +18,14 @@ python features.py logmel --dataset_dir=$DATASET_DIR --subdir=$LB_SUBTASK_B_DIR 
 
 ########################
 # Train model for subtask A
-CUDA_VISIBLE_DEVICES=0 python main.py train --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_A_DIR --workspace=$WORKSPACE --validation=True
+CUDA_VISIBLE_DEVICES=0 python main_pytorch.py train --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_A_DIR --workspace=$WORKSPACE --validate
 
 # Evaluate subtask A
-CUDA_VISIBLE_DEVICES=0 python main.py inference_validation --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_A_DIR --workspace=$WORKSPACE --iteration=1000
+CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_validation --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_A_DIR --workspace=$WORKSPACE --iteration=1000
 
 ########################
 # Train model for subtask B
-CUDA_VISIBLE_DEVICES=0 python main.py train --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_B_DIR --workspace=$WORKSPACE --validation=True
+CUDA_VISIBLE_DEVICES=0 python main_pytorch.py train --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_B_DIR --workspace=$WORKSPACE --validate
 
 # Evaluate subtask B
-CUDA_VISIBLE_DEVICES=0 python main.py inference_validation --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_B_DIR --workspace=$WORKSPACE --iteration=3000
+CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_validation --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_B_DIR --workspace=$WORKSPACE --iteration=3000

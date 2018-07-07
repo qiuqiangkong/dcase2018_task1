@@ -81,7 +81,7 @@ def train(args):
     subdir = args.subdir
     workspace = args.workspace
     filename = args.filename
-    validation = (args.validation == 'True')
+    validate = args.validate
     mini_data = args.mini_data
     cuda = args.cuda
 
@@ -103,7 +103,7 @@ def train(args):
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
                                  'data.h5')
 
-    if validation:
+    if validate:
         
         dev_train_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
                                     'fold1_train.txt')
@@ -116,7 +116,7 @@ def train(args):
         dev_validate_csv = None
 
     models_dir = os.path.join(workspace, 'models', subdir, filename,
-                              'validation={}'.format(validation))
+                              'validate={}'.format(validate))
 
     create_folder(models_dir)
 
@@ -133,7 +133,7 @@ def train(args):
                         dev_validate_csv=dev_validate_csv)
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.999),
+    optimizer = optim.Adam(model.parameters(), lr=1e-4, betas=(0.9, 0.999),
                            eps=1e-08, weight_decay=0.)
 
     iteration = 0
@@ -154,12 +154,18 @@ def train(args):
                               max_iteration=-1,
                               cuda=cuda)
 
-            va_acc = evaluate(model=model,
-                              gen=gen,
-                              data_type='validate',
-                              devices=devices,
-                              max_iteration=-1,
-                              cuda=cuda)
+            logging.info("tr_acc: {:.3f}".format(tr_acc))
+
+            if validate:
+                
+                va_acc = evaluate(model=model,
+                                gen=gen,
+                                data_type='validate',
+                                devices=devices,
+                                max_iteration=-1,
+                                cuda=cuda)
+                                
+                logging.info("va_acc: {:.3f}".format(va_acc))
 
             train_time = train_fin_time - train_bgn_time
             validate_time = time.time() - train_fin_time
@@ -167,10 +173,6 @@ def train(args):
             logging.info(
                 "iteration: {}, train time: {:.3f} s, validate time: {:.3f} s".format(
                     iteration, train_time, validate_time))
-
-            logging.info("tr_acc: {:.3f}".format(tr_acc))
-
-            logging.info("va_acc: {:.3f}".format(va_acc))
 
             logging.info("")
 
@@ -298,9 +300,9 @@ if __name__ == '__main__':
     parser_train.add_argument('--dataset_dir', type=str, required=True)
     parser_train.add_argument('--subdir', type=str, required=True)
     parser_train.add_argument('--workspace', type=str, required=True)
-    parser_train.add_argument('--validation', action='store_true', 
-                              default=True)
-    parser_train.add_argument('--cuda', action='store_true', default=True)
+    parser_train.add_argument('--validate', action='store_true', 
+                              default=False)
+    parser_train.add_argument('--cuda', action='store_true', default=False)
     parser_train.add_argument('--mini_data', action='store_true',
                               default=False)
     
@@ -314,7 +316,7 @@ if __name__ == '__main__':
     parser_inference_validation.add_argument('--iteration', type=int, 
                                              required=True)
     parser_inference_validation.add_argument('--cuda', action='store_true', 
-                                             default=True)
+                                             default=False)
 
     args = parser.parse_args()
 
