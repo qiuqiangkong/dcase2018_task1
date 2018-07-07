@@ -16,7 +16,7 @@ from data_generator import DataGenerator
 from utilities import (create_folder, get_filename, create_logging,
                        move_data_to_gpu, calculate_confusion_matrix,
                        calculate_accuracy, plot_confusion_matrix)
-from pytorch_models import BaselineCnn
+from models_pytorch import BaselineCnn
 import config
 
 
@@ -98,10 +98,10 @@ def train(args):
     # Paths
     if mini_data:
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
-                                 'mini_dev.h5')
+                                 'mini_development.h5')
     else:
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
-                                 'dev.h5')
+                                 'dev_development.h5')
 
     dev_train_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
                                  'fold1_train.txt')
