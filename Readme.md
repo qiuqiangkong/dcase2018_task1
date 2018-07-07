@@ -20,11 +20,13 @@ The log mel spectrogram of the scenes are shown below:
 
 ## Run the code
 
-Install dependent packages. If you are using conda, simply run:
+(Optional) Install dependent packages. If you are using conda, simply run:
 
 $ conda env create -f environment.yml
 
 $ conda activate py3_dcase2018_task1
+
+Then simply run:
 
 **$ ./runme.sh**
 
