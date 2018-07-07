@@ -125,13 +125,15 @@ def calculate_features(args):
     if data_type == 'development':
         meta_csv = os.path.join(dataset_dir, subdir, 'meta.csv')
     else:
-        evaluation_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup', 'test.txt')
+        evaluation_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup', 
+                                      'test.txt')
     
     if mini_data:
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir, 
-                                 'mini_data.h5')
+                                 'mini_{}.h5'.format(data_type))
     else:
-        hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir, 'data.h5')
+        hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir, 
+                                 '{}.h5'.format(data_type))
         
         
     create_folder(os.path.dirname(hdf5_path))
@@ -208,9 +210,18 @@ def calculate_features(args):
     hf.create_dataset(name='filename', data=[s.encode() for s in audio_names], dtype='S50')
     
     if data_type == 'development':
-        hf.create_dataset(name='scene_label', data=[s.encode() for s in scene_labels], dtype='S20')
-        hf.create_dataset(name='identifier', data=[s.encode() for s in identifiers], dtype='S20')
-        hf.create_dataset(name='source_label', data=[s.encode() for s in source_labels], dtype='S20')
+        
+        hf.create_dataset(name='scene_label', 
+                          data=[s.encode() for s in scene_labels], 
+                          dtype='S20')
+                          
+        hf.create_dataset(name='identifier', 
+                          data=[s.encode() for s in identifiers], 
+                          dtype='S20')
+                          
+        hf.create_dataset(name='source_label', 
+                          data=[s.encode() for s in source_labels], 
+                          dtype='S20')
 
     hf.close()
     
