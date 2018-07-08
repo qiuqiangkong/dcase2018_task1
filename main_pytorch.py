@@ -21,102 +21,75 @@ import config
 
 
 def evaluate(model, generator, data_type, devices, max_iteration, cuda):
+    """Evaluate
+    
+    Args:
+      model: object.
+      generator: object.
+      data_type: 'train' | 'validate'.
+      devices: list of devices, e.g. ['a'] | ['a', 'b', 'c']
+      max_iteration: int, maximum iteration for validation
+      cuda: bool.
+      
+    Returns:
+      accuracy: float
     """
-    model: object.
-    generator: object.
-    data_type: 'train' | 'validate'.
-    max_iteration: int.
-    cuda: bool.
-    """
-    '''
-    (output, target) = forward(model=model,
-                               generator=generator,
-                               data_type=data_type,
-                               devices=devices,
-                               max_iteration=-1,
-                               cuda=cuda)
-    '''
     
     generate_func = generator.generate_validate(
             data_type=data_type, devices=devices, max_iteration=max_iteration)
-    (output, target) = forward(model=model, generate_func=generate_func, cuda=cuda)
+    (outputs, targets, audio_names) = forward(model=model, generate_func=generate_func, cuda=cuda, has_target=True)
 
-    predict = np.argmax(output, axis=-1)
+    predictions = np.argmax(outputs, axis=-1)
 
-    classes_num = output.shape[-1]
-    confusion_matrix = calculate_confusion_matrix(target, predict, classes_num)
-    accuracy = calculate_accuracy(target, predict)
+    classes_num = outputs.shape[-1]
+    confusion_matrix = calculate_confusion_matrix(targets, predictions, classes_num)
+    accuracy = calculate_accuracy(targets, predictions)
 
     return accuracy
 
-def forward(model, generate_func, cuda):
+
+def forward(model, generate_func, cuda, has_target):
     """Forward data to a model.
-    """
     
-
-    model.eval()
-
-    output_all = []
-    target_all = []
-
-    iteration = 0
-
-    # Evaluate on mini-batch
-    for (batch_x, batch_y) in generate_func:
-        
-        # import crash
-        # asdf
-
-        batch_x = move_data_to_gpu(batch_x, cuda)
-
-        batch_output = model(batch_x)
-
-        output_all.append(batch_output.data.cpu().numpy())
-        target_all.append(batch_y)
-
-        iteration += 1
-
-    output_all = np.concatenate(output_all, axis=0)
-    target_all = np.concatenate(target_all, axis=0)
-
-    return output_all, target_all
-
-'''
-def forward(model, generator, data_type, devices, max_iteration, cuda):
-    """Forward data to a model.
-
-    model: object.
-    generator: object.
-    data_type: 'train' | 'validate'.
-    max_iteration: int.
-    cuda: bool.
+    Args:
+      generate_func: generate function
+      cuda: bool
+      has_target: bool
     """
 
     model.eval()
 
-    output_all = []
-    target_all = []
-
-    iteration = 0
+    outputs = []
+    targets = []
+    audio_names = []
 
     # Evaluate on mini-batch
-    for (batch_x, batch_y) in generator.generate_validate(
-            data_type=data_type, devices=devices, max_iteration=max_iteration):
-
+    for data in generate_func:
+            
+        if has_target:
+            (batch_x, batch_y, batch_audio_names) = data
+            targets.append(batch_y)
+            
+        else:
+            (batch_x, batch_audio_names) = data
+            
         batch_x = move_data_to_gpu(batch_x, cuda)
 
+        # Predict
         batch_output = model(batch_x)
 
-        output_all.append(batch_output.data.cpu().numpy())
-        target_all.append(batch_y)
+        outputs.append(batch_output.data.cpu().numpy())
+        audio_names.append(batch_audio_names)
 
-        iteration += 1
-
-    output_all = np.concatenate(output_all, axis=0)
-    target_all = np.concatenate(target_all, axis=0)
-
-    return output_all, target_all
-'''
+    outputs = np.concatenate(outputs, axis=0)
+    audio_names = np.concatenate(audio_names, axis=0)
+    
+    if has_target:
+        targets = np.concatenate(targets, axis=0)
+        return outputs, targets, audio_names
+        
+    else:
+        return outputs, audio_names
 
 
 def train(args):
@@ -229,8 +202,8 @@ def train(args):
 
         # Train
         model.train()
-        output = model(batch_x)
-        loss = F.nll_loss(output, batch_y)
+        batch_output = model(batch_x)
+        loss = F.nll_loss(batch_output, batch_y)
 
         # Backward
         optimizer.zero_grad()
@@ -284,7 +257,7 @@ def inference_validation(args):
                                     'fold1_evaluate.txt')
 
     model_path = os.path.join(workspace, 'models', subdir, filename,
-                              'validation={}'.format(validation),
+                              'validate={}'.format(validation),
                               'md_{}_iters.tar'.format(iteration))
 
     # Load model
@@ -306,22 +279,23 @@ def inference_validation(args):
                                   dev_train_csv=dev_train_csv,
                                   dev_validate_csv=dev_validate_csv)
 
-        (output, target) = forward(model=model,
-                                   generator=generator,
-                                   data_type='validate',
-                                   devices=device,
-                                   max_iteration=-1,
-                                   cuda=cuda)
+        generate_func = generator.generate_validate(data_type='validate', 
+                                                     devices=device)
 
-        predict = np.argmax(output, axis=-1)
+        (outputs, targets, audio_names) = forward(model=model,
+                                   generate_func=generate_func, 
+                                   cuda=cuda, 
+                                   has_target=True)
 
-        classes_num = output.shape[-1]
+        predictions = np.argmax(outputs, axis=-1)
+
+        classes_num = outputs.shape[-1]
         
         # Evaluate
         confusion_matrix = calculate_confusion_matrix(
-            target, predict, classes_num)
+            targets, predictions, classes_num)
             
-        accuracy = calculate_accuracy(target, predict)
+        accuracy = calculate_accuracy(targets, predictions)
         
         class_wise_acc = np.diag(confusion_matrix) / \
             np.sum(confusion_matrix, axis=0)
@@ -349,11 +323,7 @@ def inference_testing_data(args):
     cuda = args.cuda
 
     labels = config.labels
-
-    if 'mobile' in test_subdir:
-        devices = ['a', 'b', 'c']
-    else:
-        devices = ['a']
+    ix_to_lb = config.ix_to_lb
 
     batch_size = 64
     classes_num = len(labels)
@@ -363,11 +333,17 @@ def inference_testing_data(args):
                              'development.h5')
 
     test_hdf5_path = os.path.join(workspace, 'features', 'logmel', test_subdir,
-                             'test.h5')
+                             'leaderboard.h5')
 
     model_path = os.path.join(workspace, 'models', dev_subdir, filename,
                               'validate=False', 
                               'md_{}_iters.tar'.format(iteration))
+
+    submission_path = os.path.join(workspace, 'submissions', test_subdir, 
+                                   filename, 'iteration={}'.format(iteration), 
+                                   'submission.csv')
+                                   
+    create_folder(os.path.dirname(submission_path))
 
     # Load model
     model = BaselineCnn(classes_num)
@@ -377,42 +353,37 @@ def inference_testing_data(args):
     if cuda:
         model.cuda()
 
-    # Predict & evaluate
-    for device in devices:
+    
 
-        print("Device: {}".format(device))
+    # Data generator
+    generator = TestDataGenerator(dev_hdf5_path=dev_hdf5_path,
+                                    test_hdf5_path=test_hdf5_path, 
+                                    batch_size=batch_size)
 
-        # Data generator
-        generator = TestDataGenerator(dev_hdf5_path=dev_hdf5_path,
-                                      test_hdf5_path=test_hdf5_path, 
-                                      batch_size=batch_size)
+    generate_func = generator.generate_test()
 
-        generate_func = generator.generate_testing_data()
+    # Predict
+    (outputs, audio_names) = forward(model=model, 
+                     generate_func=generate_func, 
+                     cuda=cuda, 
+                     has_target=False)
+    '''(audios_num, classes_num)'''
 
-        output = forward(model=model, generate_func=generate_func, cuda=cuda)
+    predictions = np.argmax(outputs, axis=-1)    # (audios_num,)
 
-        predict = np.argmax(output, axis=-1)
-
-        classes_num = output.shape[-1]
+    # Write result to submission csv
+    f = open(submission_path, 'w')	
+    
+    for n in range(len(audio_names)):
+        f.write('audio/{}'.format(audio_names[n]))
+        f.write('\t')
+        f.write(ix_to_lb[predictions[n]])
+        f.write('\n')
         
-        # Evaluate
-        confusion_matrix = calculate_confusion_matrix(
-            target, predict, classes_num)
-            
-        accuracy = calculate_accuracy(target, predict)
-        
-        class_wise_acc = np.diag(confusion_matrix) / \
-            np.sum(confusion_matrix, axis=0)
-
-        print("confusion_matrix: \n", confusion_matrix)
-        print("averaged accuracy: {}".format(accuracy))
-
-        # Plot confusion matrix
-        plot_confusion_matrix(
-            confusion_matrix,
-            title='Device {}'.format(device.upper()), 
-            labels=labels,
-            values=class_wise_acc)
+    f.close()
+    
+    logging.info("Result wrote to {}".format(submission_path))
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')

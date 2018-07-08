@@ -30,7 +30,7 @@ class DataGenerator(object):
         load_time = time.time()
         hf = h5py.File(hdf5_path, 'r')
 
-        self.audio_names = [s.decode() for s in hf['filename'][:]]
+        self.audio_names = np.array([s.decode() for s in hf['filename'][:]])
         self.x = hf['feature'][:]
         self.scene_labels = [s.decode() for s in hf['scene_label'][:]]
         self.identifiers = [s.decode() for s in hf['identifier'][:]]
@@ -78,7 +78,7 @@ class DataGenerator(object):
             audio_name = li[0].split('/')[1]
 
             if audio_name in self.audio_names:
-                audio_index = self.audio_names.index(audio_name)
+                audio_index = np.where(self.audio_names == audio_name)[0][0]
                 audio_indexes.append(audio_index)
 
         return audio_indexes
@@ -179,11 +179,12 @@ class DataGenerator(object):
 
             batch_x = self.x[batch_audio_indexes]
             batch_y = self.y[batch_audio_indexes]
+            batch_audio_names = self.audio_names[batch_audio_indexes]
 
             # Transform data
             batch_x = self.transform(batch_x)
 
-            yield batch_x, batch_y
+            yield batch_x, batch_y, batch_audio_names
 
     def transform(self, x):
         """Transform data. 
@@ -218,5 +219,29 @@ class TestDataGenerator(DataGenerator):
         hf.close()
         logging.info("Loading data time: {}".format(time.time() - load_time))
         
-        import crash
-        asdf
+    def generate_test(self):
+        
+        audios_num = len(self.test_x)
+        audio_indexes = np.arange(audios_num)
+        batch_size = self.batch_size
+        
+        pointer = 0
+        
+        while True:
+
+            # Reset pointer
+            if pointer >= audios_num:
+                break
+
+            # Get batch indexes
+            batch_audio_indexes = audio_indexes[pointer: pointer + batch_size]
+                
+            pointer += batch_size
+
+            batch_x = self.test_x[batch_audio_indexes]
+            batch_audio_names = self.audio_names[batch_audio_indexes]
+
+            # Transform data
+            batch_x = self.transform(batch_x)
+
+            yield batch_x, batch_audio_names

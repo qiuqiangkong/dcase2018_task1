@@ -39,6 +39,33 @@ Or run the commands in runme.sh line by line, including:
 
 (4) Evaluation
 
+The training looks like:
+
+</pre>
+root        : INFO     Loading data time: 7.601605415344238
+root        : INFO     Split development data to 6122 training and 2518 validation data. 
+root        : INFO     Number of train audios in specific devices ['a']: 6122
+root        : INFO     tr_acc: 0.100
+root        : INFO     Number of validate audios in specific devices ['a']: 2518
+root        : INFO     va_acc: 0.100
+root        : INFO     iteration: 0, train time: 0.006 s, validate time: 2.107 s
+root        : INFO     ------------------------------------
+
+......
+
+root        : INFO     Number of train audios in specific devices ['a']: 6122
+root        : INFO     tr_acc: 1.000
+root        : INFO     Number of validate audios in specific devices ['a']: 2518
+root        : INFO     va_acc: 0.688
+root        : INFO     iteration: 3000, train time: 6.966 s, validate time: 2.340 s
+root        : INFO     ------------------------------------
+root        : INFO     Number of train audios in specific devices ['a']: 6122
+root        : INFO     tr_acc: 1.000
+root        : INFO     Number of validate audios in specific devices ['a']: 2518
+root        : INFO     va_acc: 0.688
+root        : INFO     iteration: 3100, train time: 6.266 s, validate time: 2.345 s
+</pre>
+
 ## Result
 
 We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 100 ms / iteration on a GTX Titan X GPU. The model is trained for 3000 iterations. The result is shown below. 
