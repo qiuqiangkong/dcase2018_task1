@@ -50,9 +50,7 @@ root        : INFO     Number of validate audios in specific devices ['a']: 2518
 root        : INFO     va_acc: 0.100
 root        : INFO     iteration: 0, train time: 0.006 s, validate time: 2.107 s
 root        : INFO     ------------------------------------
-
 ......
-
 root        : INFO     Number of train audios in specific devices ['a']: 6122
 root        : INFO     tr_acc: 1.000
 root        : INFO     Number of validate audios in specific devices ['a']: 2518

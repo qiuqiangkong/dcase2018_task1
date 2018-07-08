@@ -14,10 +14,29 @@ from torch.autograd import Variable
 
 from data_generator import DataGenerator, TestDataGenerator
 from utilities import (create_folder, get_filename, create_logging,
-                       move_data_to_gpu, calculate_confusion_matrix,
+                       calculate_confusion_matrix,
                        calculate_accuracy, plot_confusion_matrix)
 from models_pytorch import BaselineCnn
 import config
+
+
+def move_data_to_gpu(x, cuda):
+
+    if 'float' in str(x.dtype):
+        x = torch.Tensor(x)
+
+    elif 'int' in str(x.dtype):
+        x = torch.LongTensor(x)
+
+    else:
+        raise Exception("Error!")
+
+    if cuda:
+        x = x.cuda()
+
+    x = Variable(x)
+
+    return x
 
 
 def evaluate(model, generator, data_type, devices, max_iteration, cuda):
@@ -55,6 +74,9 @@ def forward(model, generate_func, cuda, has_target):
       generate_func: generate function
       cuda: bool
       has_target: bool
+      
+    Returns:
+      (outputs, targets, audio_names) | (outputs, audio_names)
     """
 
     model.eval()

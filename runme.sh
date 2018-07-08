@@ -34,9 +34,9 @@ CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_validation --dataset_dir
 ############ Full train subtask A ############
 CUDA_VISIBLE_DEVICES=0 python main_pytorch.py train --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_A_DIR --workspace=$WORKSPACE --cuda
 
-CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_testing_data --dataset_dir=$DATASET_DIR --dev_subdir=$DEV_SUBTASK_A_DIR --test_subdir=$LB_SUBTASK_A_DIR --workspace=$WORKSPACE --iteration --cuda
+CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_testing_data --dataset_dir=$DATASET_DIR --dev_subdir=$DEV_SUBTASK_A_DIR --test_subdir=$LB_SUBTASK_A_DIR --workspace=$WORKSPACE --iteration=3000 --cuda
 
 ############ Full train subtask B ############
 CUDA_VISIBLE_DEVICES=0 python main_pytorch.py train --dataset_dir=$DATASET_DIR --subdir=$DEV_SUBTASK_B_DIR --workspace=$WORKSPACE --cuda
 
-CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_testing_data --dataset_dir=$DATASET_DIR --dev_subdir=$DEV_SUBTASK_B_DIR --test_subdir=$LB_SUBTASK_B_DIR --workspace=$WORKSPACE --iteration --cuda
+CUDA_VISIBLE_DEVICES=0 python main_pytorch.py inference_testing_data --dataset_dir=$DATASET_DIR --dev_subdir=$DEV_SUBTASK_B_DIR --test_subdir=$LB_SUBTASK_B_DIR --workspace=$WORKSPACE --iteration=3000 --cuda

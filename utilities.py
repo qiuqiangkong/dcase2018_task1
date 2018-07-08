@@ -7,9 +7,6 @@ import logging
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
-import torch
-from torch.autograd import Variable
-
 
 def create_folder(fd):
     if not os.path.exists(fd):
@@ -84,25 +81,6 @@ def scale(x, mean, std):
 def inverse_scale(x, mean, std):
 
     return x * std + mean
-
-
-def move_data_to_gpu(x, cuda):
-
-    if 'float' in str(x.dtype):
-        x = torch.Tensor(x)
-
-    elif 'int' in str(x.dtype):
-        x = torch.LongTensor(x)
-
-    else:
-        raise Exception("Error!")
-
-    if cuda:
-        x = x.cuda()
-
-    x = Variable(x)
-
-    return x
 
 
 def calculate_auc(target, predict):
