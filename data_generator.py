@@ -38,7 +38,8 @@ class DataGenerator(object):
         self.y = np.array([lb_to_ix[lb] for lb in self.scene_labels])
 
         hf.close()
-        logging.info("Loading data time: {}".format(time.time() - load_time))
+        logging.info("Loading data time: {:.3f} s".format(
+            time.time() - load_time))
 
         # Calculate scalar
         (self.mean, self.std) = calculate_scalar(self.x)
@@ -217,7 +218,9 @@ class TestDataGenerator(DataGenerator):
         self.test_x = hf['feature'][:]
         
         hf.close()
-        logging.info("Loading data time: {}".format(time.time() - load_time))
+        
+        logging.info("Loading data time: {:.3f} s".format(
+            time.time() - load_time))
         
     def generate_test(self):
         

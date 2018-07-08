@@ -54,14 +54,25 @@ def evaluate(model, generator, data_type, devices, max_iteration, cuda):
       accuracy: float
     """
     
-    generate_func = generator.generate_validate(
-            data_type=data_type, devices=devices, max_iteration=max_iteration)
-    (outputs, targets, audio_names) = forward(model=model, generate_func=generate_func, cuda=cuda, has_target=True)
+    # Generate function
+    generate_func = generator.generate_validate(data_type=data_type, 
+                                                devices=devices, 
+                                                max_iteration=max_iteration)
+            
+    # Forward
+    (outputs, targets, audio_names) = forward(model=model, 
+                                              generate_func=generate_func, 
+                                              cuda=cuda, 
+                                              has_target=True)
 
     predictions = np.argmax(outputs, axis=-1)
 
+    # Evaluate
     classes_num = outputs.shape[-1]
-    confusion_matrix = calculate_confusion_matrix(targets, predictions, classes_num)
+    
+    confusion_matrix = calculate_confusion_matrix(
+        targets, predictions, classes_num)
+    
     accuracy = calculate_accuracy(targets, predictions)
 
     return accuracy
@@ -439,7 +450,7 @@ if __name__ == '__main__':
     args.filename = get_filename(__file__)
 
     # Create log
-    logs_dir = os.path.join(args.workspace, 'logs', get_filename(__file__))
+    logs_dir = os.path.join(args.workspace, 'logs', args.filename)
     create_logging(logs_dir, filemode='w')
     logging.info(args)
 
