@@ -415,7 +415,7 @@ def inference_testing_data(args):
         
     f.close()
     
-    logging.info("Result wrote to {}".format(submission_path))
+    logging.info("Write result to {}".format(submission_path))
     
 
 if __name__ == '__main__':
