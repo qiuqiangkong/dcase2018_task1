@@ -12,22 +12,34 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.autograd import Variable
 
-from data_generator import DataGenerator
+from data_generator import DataGenerator, TestDataGenerator
 from utilities import (create_folder, get_filename, create_logging,
                        move_data_to_gpu, calculate_confusion_matrix,
                        calculate_accuracy, plot_confusion_matrix)
-from models import BaselineCnn
+from models_pytorch import BaselineCnn
 import config
 
 
-def evaluate(model, gen, data_type, devices, max_iteration, cuda):
-
+def evaluate(model, generator, data_type, devices, max_iteration, cuda):
+    """
+    model: object.
+    generator: object.
+    data_type: 'train' | 'validate'.
+    max_iteration: int.
+    cuda: bool.
+    """
+    '''
     (output, target) = forward(model=model,
-                               gen=gen,
+                               generator=generator,
                                data_type=data_type,
                                devices=devices,
                                max_iteration=-1,
                                cuda=cuda)
+    '''
+    
+    generate_func = generator.generate_validate(
+            data_type=data_type, devices=devices, max_iteration=max_iteration)
+    (output, target) = forward(model=model, generate_func=generate_func, cuda=cuda)
 
     predict = np.argmax(output, axis=-1)
 
@@ -37,12 +49,44 @@ def evaluate(model, gen, data_type, devices, max_iteration, cuda):
 
     return accuracy
 
+def forward(model, generate_func, cuda):
+    """Forward data to a model.
+    """
+    
 
-def forward(model, gen, data_type, devices, max_iteration, cuda):
+    model.eval()
+
+    output_all = []
+    target_all = []
+
+    iteration = 0
+
+    # Evaluate on mini-batch
+    for (batch_x, batch_y) in generate_func:
+        
+        # import crash
+        # asdf
+
+        batch_x = move_data_to_gpu(batch_x, cuda)
+
+        batch_output = model(batch_x)
+
+        output_all.append(batch_output.data.cpu().numpy())
+        target_all.append(batch_y)
+
+        iteration += 1
+
+    output_all = np.concatenate(output_all, axis=0)
+    target_all = np.concatenate(target_all, axis=0)
+
+    return output_all, target_all
+
+'''
+def forward(model, generator, data_type, devices, max_iteration, cuda):
     """Forward data to a model.
 
     model: object.
-    gen: object.
+    generator: object.
     data_type: 'train' | 'validate'.
     max_iteration: int.
     cuda: bool.
@@ -56,7 +100,7 @@ def forward(model, gen, data_type, devices, max_iteration, cuda):
     iteration = 0
 
     # Evaluate on mini-batch
-    for (batch_x, batch_y) in gen.generate_validate(
+    for (batch_x, batch_y) in generator.generate_validate(
             data_type=data_type, devices=devices, max_iteration=max_iteration):
 
         batch_x = move_data_to_gpu(batch_x, cuda)
@@ -72,6 +116,7 @@ def forward(model, gen, data_type, devices, max_iteration, cuda):
     target_all = np.concatenate(target_all, axis=0)
 
     return output_all, target_all
+'''
 
 
 def train(args):
@@ -98,10 +143,10 @@ def train(args):
     # Paths
     if mini_data:
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
-                                 'mini_data.h5')
+                                 'mini_development.h5')
     else:
         hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
-                                 'data.h5')
+                                 'development.h5')
 
     if validate:
         
@@ -127,20 +172,20 @@ def train(args):
         model.cuda()
 
     # Data generator
-    gen = DataGenerator(hdf5_path=hdf5_path,
+    generator = DataGenerator(hdf5_path=hdf5_path,
                         batch_size=batch_size,
                         dev_train_csv=dev_train_csv,
                         dev_validate_csv=dev_validate_csv)
 
     # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-4, betas=(0.9, 0.999),
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.999),
                            eps=1e-08, weight_decay=0.)
 
     iteration = 0
     train_bgn_time = time.time()
 
-    # Train on mini-batch
-    for (batch_x, batch_y) in gen.generate_train():
+    # Train on mini batches
+    for (batch_x, batch_y) in generator.generate_train():
 
         # Evaluate
         if iteration % 100 == 0:
@@ -148,7 +193,7 @@ def train(args):
             train_fin_time = time.time()
 
             tr_acc = evaluate(model=model,
-                              gen=gen,
+                              generator=generator,
                               data_type='train',
                               devices=devices,
                               max_iteration=-1,
@@ -159,7 +204,7 @@ def train(args):
             if validate:
                 
                 va_acc = evaluate(model=model,
-                                gen=gen,
+                                generator=generator,
                                 data_type='validate',
                                 devices=devices,
                                 max_iteration=-1,
@@ -174,7 +219,7 @@ def train(args):
                 "iteration: {}, train time: {:.3f} s, validate time: {:.3f} s".format(
                     iteration, train_time, validate_time))
 
-            logging.info("")
+            logging.info("------------------------------------")
 
             train_bgn_time = time.time()
 
@@ -230,7 +275,7 @@ def inference_validation(args):
 
     # Paths
     hdf5_path = os.path.join(workspace, 'features', 'logmel', subdir,
-                             'data.h5')
+                             'development.h5')
 
     dev_train_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
                                  'fold1_train.txt')
@@ -256,13 +301,13 @@ def inference_validation(args):
         print("Device: {}".format(device))
 
         # Data generator
-        gen = DataGenerator(hdf5_path=hdf5_path,
-                            batch_size=batch_size,
-                            dev_train_csv=dev_train_csv,
-                            dev_validate_csv=dev_validate_csv)
+        generator = DataGenerator(hdf5_path=hdf5_path,
+                                  batch_size=batch_size,
+                                  dev_train_csv=dev_train_csv,
+                                  dev_validate_csv=dev_validate_csv)
 
         (output, target) = forward(model=model,
-                                   gen=gen,
+                                   generator=generator,
                                    data_type='validate',
                                    devices=device,
                                    max_iteration=-1,
@@ -290,7 +335,84 @@ def inference_validation(args):
             title='Device {}'.format(device.upper()), 
             labels=labels,
             values=class_wise_acc)
+            
+            
+def inference_testing_data(args):
+    
+    # Arugments & parameters
+    dataset_dir = args.dataset_dir
+    dev_subdir = args.dev_subdir
+    test_subdir = args.test_subdir
+    workspace = args.workspace
+    iteration = args.iteration
+    filename = args.filename
+    cuda = args.cuda
 
+    labels = config.labels
+
+    if 'mobile' in test_subdir:
+        devices = ['a', 'b', 'c']
+    else:
+        devices = ['a']
+
+    batch_size = 64
+    classes_num = len(labels)
+
+    # Paths
+    dev_hdf5_path = os.path.join(workspace, 'features', 'logmel', dev_subdir,
+                             'development.h5')
+
+    test_hdf5_path = os.path.join(workspace, 'features', 'logmel', test_subdir,
+                             'test.h5')
+
+    model_path = os.path.join(workspace, 'models', dev_subdir, filename,
+                              'validate=False', 
+                              'md_{}_iters.tar'.format(iteration))
+
+    # Load model
+    model = BaselineCnn(classes_num)
+    checkpoint = torch.load(model_path)
+    model.load_state_dict(checkpoint['state_dict'])
+
+    if cuda:
+        model.cuda()
+
+    # Predict & evaluate
+    for device in devices:
+
+        print("Device: {}".format(device))
+
+        # Data generator
+        generator = TestDataGenerator(dev_hdf5_path=dev_hdf5_path,
+                                      test_hdf5_path=test_hdf5_path, 
+                                      batch_size=batch_size)
+
+        generate_func = generator.generate_testing_data()
+
+        output = forward(model=model, generate_func=generate_func, cuda=cuda)
+
+        predict = np.argmax(output, axis=-1)
+
+        classes_num = output.shape[-1]
+        
+        # Evaluate
+        confusion_matrix = calculate_confusion_matrix(
+            target, predict, classes_num)
+            
+        accuracy = calculate_accuracy(target, predict)
+        
+        class_wise_acc = np.diag(confusion_matrix) / \
+            np.sum(confusion_matrix, axis=0)
+
+        print("confusion_matrix: \n", confusion_matrix)
+        print("averaged accuracy: {}".format(accuracy))
+
+        # Plot confusion matrix
+        plot_confusion_matrix(
+            confusion_matrix,
+            title='Device {}'.format(device.upper()), 
+            labels=labels,
+            values=class_wise_acc)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
@@ -300,23 +422,24 @@ if __name__ == '__main__':
     parser_train.add_argument('--dataset_dir', type=str, required=True)
     parser_train.add_argument('--subdir', type=str, required=True)
     parser_train.add_argument('--workspace', type=str, required=True)
-    parser_train.add_argument('--validate', action='store_true', 
-                              default=False)
+    parser_train.add_argument('--validate', action='store_true', default=False)
     parser_train.add_argument('--cuda', action='store_true', default=False)
-    parser_train.add_argument('--mini_data', action='store_true',
-                              default=False)
+    parser_train.add_argument('--mini_data', action='store_true', default=False)
     
     parser_inference_validation = subparsers.add_parser('inference_validation')
-    parser_inference_validation.add_argument('--dataset_dir', type=str, 
-                                             required=True)
-    parser_inference_validation.add_argument('--subdir', type=str, 
-                                             required=True)
-    parser_inference_validation.add_argument('--workspace', type=str, 
-                                             required=True)
-    parser_inference_validation.add_argument('--iteration', type=int, 
-                                             required=True)
-    parser_inference_validation.add_argument('--cuda', action='store_true', 
-                                             default=False)
+    parser_inference_validation.add_argument('--dataset_dir', type=str, required=True)
+    parser_inference_validation.add_argument('--subdir', type=str, required=True)
+    parser_inference_validation.add_argument('--workspace', type=str, required=True)
+    parser_inference_validation.add_argument('--iteration', type=int, required=True)
+    parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
+                                             
+    parser_inference_testing_data = subparsers.add_parser('inference_testing_data')
+    parser_inference_testing_data.add_argument('--dataset_dir', type=str, required=True)
+    parser_inference_testing_data.add_argument('--dev_subdir', type=str, required=True)
+    parser_inference_testing_data.add_argument('--test_subdir', type=str, required=True)
+    parser_inference_testing_data.add_argument('--workspace', type=str, required=True)
+    parser_inference_testing_data.add_argument('--iteration', type=int, required=True)
+    parser_inference_testing_data.add_argument('--cuda', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -332,6 +455,9 @@ if __name__ == '__main__':
 
     elif args.mode == 'inference_validation':
         inference_validation(args)
+        
+    elif args.mode == 'inference_testing_data':
+        inference_testing_data(args)
 
     else:
         raise Exception("Error argument!")

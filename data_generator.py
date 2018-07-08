@@ -30,8 +30,8 @@ class DataGenerator(object):
         load_time = time.time()
         hf = h5py.File(hdf5_path, 'r')
 
-        self.x = hf['feature'][:]
         self.audio_names = [s.decode() for s in hf['filename'][:]]
+        self.x = hf['feature'][:]
         self.scene_labels = [s.decode() for s in hf['scene_label'][:]]
         self.identifiers = [s.decode() for s in hf['identifier'][:]]
         self.source_labels = [s.decode() for s in hf['source_label']]
@@ -46,20 +46,20 @@ class DataGenerator(object):
         # Use all data for training
         if dev_train_csv is None and dev_validate_csv is None:
 
-            self.tr_audio_indexes = np.arange(len(self.audio_names))
+            self.train_audio_indexes = np.arange(len(self.audio_names))
             logging.info("Use all development data for training. ")
 
         # Split data to training and validation
         else:
 
-            self.tr_audio_indexes = self.calculate_audio_indexes_from_csv(
+            self.train_audio_indexes = self.calculate_audio_indexes_from_csv(
                 dev_train_csv)
                 
-            self.va_audio_indexes = self.calculate_audio_indexes_from_csv(
+            self.valid_audio_indexes = self.calculate_audio_indexes_from_csv(
                 dev_validate_csv)
                 
             logging.info("Split development data to {} training and {} validation data. ".format(
-                len(self.tr_audio_indexes), len(self.va_audio_indexes)))
+                len(self.train_audio_indexes), len(self.valid_audio_indexes)))
 
     def calculate_audio_indexes_from_csv(self, csv_file):
         """Calculate indexes from a csv file. 
@@ -92,7 +92,7 @@ class DataGenerator(object):
         """
 
         batch_size = self.batch_size
-        audio_indexes = self.tr_audio_indexes
+        audio_indexes = self.train_audio_indexes
         audios_num = len(audio_indexes)
 
         self.random_state.shuffle(audio_indexes)
@@ -137,10 +137,10 @@ class DataGenerator(object):
         batch_size = self.batch_size
 
         if data_type == 'train':
-            audio_indexes = self.tr_audio_indexes
+            audio_indexes = self.train_audio_indexes
 
         elif data_type == 'validate':
-            audio_indexes = self.va_audio_indexes
+            audio_indexes = self.valid_audio_indexes
 
         else:
             raise Exception("Invalid data_type!")
@@ -196,3 +196,27 @@ class DataGenerator(object):
         """
 
         return scale(x, self.mean, self.std)
+        
+    
+class TestDataGenerator(DataGenerator):
+    
+    def __init__(self, dev_hdf5_path, test_hdf5_path, batch_size):
+        
+        super(TestDataGenerator, self).__init__(
+            hdf5_path=dev_hdf5_path, 
+            batch_size=batch_size, 
+            dev_train_csv=None,
+            dev_validate_csv=None)
+            
+        # Load test data
+        load_time = time.time()
+        hf = h5py.File(test_hdf5_path, 'r')
+
+        self.test_audio_names = [s.decode() for s in hf['filename'][:]]
+        self.test_x = hf['feature'][:]
+        
+        hf.close()
+        logging.info("Loading data time: {}".format(time.time() - load_time))
+        
+        import crash
+        asdf
