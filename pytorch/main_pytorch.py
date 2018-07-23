@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], '../utils'))
 import numpy as np
 import argparse
 import h5py
@@ -10,33 +12,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.autograd import Variable
 
 from data_generator import DataGenerator, TestDataGenerator
 from utilities import (create_folder, get_filename, create_logging,
                        calculate_confusion_matrix,
                        calculate_accuracy, plot_confusion_matrix)
-from models_pytorch import BaselineCnn
+from models_pytorch import move_data_to_gpu, BaselineCnn, Vggish
 import config
 
 
-def move_data_to_gpu(x, cuda):
-
-    if 'float' in str(x.dtype):
-        x = torch.Tensor(x)
-
-    elif 'int' in str(x.dtype):
-        x = torch.LongTensor(x)
-
-    else:
-        raise Exception("Error!")
-
-    if cuda:
-        x = x.cuda()
-
-    x = Variable(x)
-
-    return x
+Model = Vggish
+batch_size = 64
 
 
 def evaluate(model, generator, data_type, devices, max_iteration, cuda):
@@ -60,48 +46,54 @@ def evaluate(model, generator, data_type, devices, max_iteration, cuda):
                                                 max_iteration=max_iteration)
             
     # Forward
-    (outputs, targets, audio_names) = forward(model=model, 
-                                              generate_func=generate_func, 
-                                              cuda=cuda, 
-                                              has_target=True)
+    dict = forward(model=model, 
+                   generate_func=generate_func, 
+                   cuda=cuda, 
+                   return_target=True)
 
-    predictions = np.argmax(outputs, axis=-1)
+    outputs = dict['output']    # (audios_num, classes_num)
+    targets = dict['target']    # (audios_num, classes_num)
+    
+    predictions = np.argmax(outputs, axis=-1)   # (audios_num,)
 
     # Evaluate
     classes_num = outputs.shape[-1]
     
+    loss = F.nll_loss(torch.Tensor(outputs), torch.LongTensor(targets)).numpy()
+    loss = float(loss)
+    
     confusion_matrix = calculate_confusion_matrix(
         targets, predictions, classes_num)
     
-    accuracy = calculate_accuracy(targets, predictions)
+    accuracy = calculate_accuracy(targets, predictions, classes_num, 
+                                  average='macro')
 
-    return accuracy
+    return accuracy, loss
 
 
-def forward(model, generate_func, cuda, has_target):
+def forward(model, generate_func, cuda, return_target):
     """Forward data to a model.
     
     Args:
       generate_func: generate function
       cuda: bool
-      has_target: bool
+      return_target: bool
       
     Returns:
-      (outputs, targets, audio_names) | (outputs, audio_names)
+      dict, keys: 'audio_name', 'output'; optional keys: 'target'
     """
-
-    model.eval()
-
+    
     outputs = []
-    targets = []
     audio_names = []
-
+    
+    if return_target:
+        targets = []
+    
     # Evaluate on mini-batch
     for data in generate_func:
             
-        if has_target:
+        if return_target:
             (batch_x, batch_y, batch_audio_names) = data
-            targets.append(batch_y)
             
         else:
             (batch_x, batch_audio_names) = data
@@ -109,20 +101,29 @@ def forward(model, generate_func, cuda, has_target):
         batch_x = move_data_to_gpu(batch_x, cuda)
 
         # Predict
+        model.eval()
         batch_output = model(batch_x)
 
+        # Append data
         outputs.append(batch_output.data.cpu().numpy())
         audio_names.append(batch_audio_names)
+        
+        if return_target:
+            targets.append(batch_y)
+
+    dict = {}
 
     outputs = np.concatenate(outputs, axis=0)
-    audio_names = np.concatenate(audio_names, axis=0)
+    dict['output'] = outputs
     
-    if has_target:
+    audio_names = np.concatenate(audio_names, axis=0)
+    dict['audio_name'] = audio_names
+    
+    if return_target:
         targets = np.concatenate(targets, axis=0)
-        return outputs, targets, audio_names
+        dict['target'] = targets
         
-    else:
-        return outputs, audio_names
+    return dict
 
 
 def train(args):
@@ -133,6 +134,7 @@ def train(args):
     workspace = args.workspace
     filename = args.filename
     validate = args.validate
+    holdout_fold = args.holdout_fold
     mini_data = args.mini_data
     cuda = args.cuda
 
@@ -143,7 +145,6 @@ def train(args):
     else:
         devices = ['a']
 
-    batch_size = 64
     classes_num = len(labels)
 
     # Paths
@@ -157,31 +158,34 @@ def train(args):
     if validate:
         
         dev_train_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
-                                    'fold1_train.txt')
+                                     'fold{}_train.txt'.format(holdout_fold))
                                     
         dev_validate_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
-                                        'fold1_evaluate.txt')
+                                    'fold{}_evaluate.txt'.format(holdout_fold))
+                              
+        models_dir = os.path.join(workspace, 'models', subdir, filename,
+                                  'holdout_fold={}'.format(holdout_fold))
                                         
     else:
         dev_train_csv = None
         dev_validate_csv = None
-
-    models_dir = os.path.join(workspace, 'models', subdir, filename,
-                              'validate={}'.format(validate))
+        
+        models_dir = os.path.join(workspace, 'models', subdir, filename,
+                                  'full_train')
 
     create_folder(models_dir)
 
     # Model
-    model = BaselineCnn(classes_num)
+    model = Model(classes_num)
 
     if cuda:
         model.cuda()
 
     # Data generator
     generator = DataGenerator(hdf5_path=hdf5_path,
-                        batch_size=batch_size,
-                        dev_train_csv=dev_train_csv,
-                        dev_validate_csv=dev_validate_csv)
+                              batch_size=batch_size,
+                              dev_train_csv=dev_train_csv,
+                              dev_validate_csv=dev_validate_csv)
 
     # Optimizer
     optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.999),
@@ -198,34 +202,36 @@ def train(args):
 
             train_fin_time = time.time()
 
-            tr_acc = evaluate(model=model,
-                              generator=generator,
-                              data_type='train',
-                              devices=devices,
-                              max_iteration=-1,
-                              cuda=cuda)
+            (tr_acc, tr_loss) = evaluate(model=model,
+                                         generator=generator,
+                                         data_type='train',
+                                         devices=devices,
+                                         max_iteration=None,
+                                         cuda=cuda)
 
-            logging.info("tr_acc: {:.3f}".format(tr_acc))
+            logging.info('tr_acc: {:.3f}, tr_loss: {:.3f}'.format(
+                tr_acc, tr_loss))
 
             if validate:
                 
-                va_acc = evaluate(model=model,
-                                generator=generator,
-                                data_type='validate',
-                                devices=devices,
-                                max_iteration=-1,
-                                cuda=cuda)
+                (va_acc, va_loss) = evaluate(model=model,
+                                             generator=generator,
+                                             data_type='validate',
+                                             devices=devices,
+                                             max_iteration=None,
+                                             cuda=cuda)
                                 
-                logging.info("va_acc: {:.3f}".format(va_acc))
+                logging.info('va_acc: {:.3f}, va_loss: {:.3f}'.format(
+                    va_acc, va_loss))
 
             train_time = train_fin_time - train_bgn_time
             validate_time = time.time() - train_fin_time
 
             logging.info(
-                "iteration: {}, train time: {:.3f} s, validate time: {:.3f} s".format(
-                    iteration, train_time, validate_time))
+                'iteration: {}, train time: {:.3f} s, validate time: {:.3f} s'
+                    ''.format(iteration, train_time, validate_time))
 
-            logging.info("------------------------------------")
+            logging.info('------------------------------------')
 
             train_bgn_time = time.time()
 
@@ -255,7 +261,16 @@ def train(args):
             save_out_path = os.path.join(
                 models_dir, 'md_{}_iters.tar'.format(iteration))
             torch.save(save_out_dict, save_out_path)
-            logging.info("Model saved to {}".format(save_out_path))
+            logging.info('Model saved to {}'.format(save_out_path))
+            
+        # Reduce learning rate
+        if iteration % 200 == 0:
+            for param_group in optimizer.param_groups:
+                param_group['lr'] *= 0.9
+                
+        # Stop learning
+        if iteration == 10000:
+            break
 
 
 def inference_validation(args):
@@ -264,6 +279,7 @@ def inference_validation(args):
     dataset_dir = args.dataset_dir
     subdir = args.subdir
     workspace = args.workspace
+    holdout_fold = args.holdout_fold
     iteration = args.iteration
     filename = args.filename
     cuda = args.cuda
@@ -276,7 +292,6 @@ def inference_validation(args):
         devices = ['a']
 
     validation = True
-    batch_size = 64
     classes_num = len(labels)
 
     # Paths
@@ -287,14 +302,14 @@ def inference_validation(args):
                                  'fold1_train.txt')
                                  
     dev_validate_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup',
-                                    'fold1_evaluate.txt')
+                                    'fold{}_evaluate.txt'.format(holdout_fold))
 
     model_path = os.path.join(workspace, 'models', subdir, filename,
-                              'validate={}'.format(validation),
+                              'holdout_fold={}'.format(holdout_fold),
                               'md_{}_iters.tar'.format(iteration))
 
     # Load model
-    model = BaselineCnn(classes_num)
+    model = Model(classes_num)
     checkpoint = torch.load(model_path)
     model.load_state_dict(checkpoint['state_dict'])
 
@@ -304,7 +319,7 @@ def inference_validation(args):
     # Predict & evaluate
     for device in devices:
 
-        print("Device: {}".format(device))
+        print('Device: {}'.format(device))
 
         # Data generator
         generator = DataGenerator(hdf5_path=hdf5_path,
@@ -315,10 +330,14 @@ def inference_validation(args):
         generate_func = generator.generate_validate(data_type='validate', 
                                                      devices=device)
 
-        (outputs, targets, audio_names) = forward(model=model,
-                                   generate_func=generate_func, 
-                                   cuda=cuda, 
-                                   has_target=True)
+        # Inference
+        dict = forward(model=model,
+                       generate_func=generate_func, 
+                       cuda=cuda, 
+                       return_target=True)
+
+        outputs = dict['output']    # (audios_num, classes_num)
+        targets = dict['target']    # (audios_num, classes_num)
 
         predictions = np.argmax(outputs, axis=-1)
 
@@ -333,8 +352,8 @@ def inference_validation(args):
         class_wise_acc = np.diag(confusion_matrix) / \
             np.sum(confusion_matrix, axis=0)
 
-        print("confusion_matrix: \n", confusion_matrix)
-        print("averaged accuracy: {}".format(accuracy))
+        print('confusion_matrix: \n', confusion_matrix)
+        print('averaged accuracy: {}'.format(accuracy))
 
         # Plot confusion matrix
         plot_confusion_matrix(
@@ -358,18 +377,17 @@ def inference_testing_data(args):
     labels = config.labels
     ix_to_lb = config.ix_to_lb
 
-    batch_size = 64
     classes_num = len(labels)
 
     # Paths
     dev_hdf5_path = os.path.join(workspace, 'features', 'logmel', dev_subdir,
-                             'development.h5')
+                                 'development.h5')
 
     test_hdf5_path = os.path.join(workspace, 'features', 'logmel', test_subdir,
-                             'leaderboard.h5')
+                                 'leaderboard.h5')
 
     model_path = os.path.join(workspace, 'models', dev_subdir, filename,
-                              'validate=False', 
+                              'full_train', 
                               'md_{}_iters.tar'.format(iteration))
 
     submission_path = os.path.join(workspace, 'submissions', test_subdir, 
@@ -379,14 +397,12 @@ def inference_testing_data(args):
     create_folder(os.path.dirname(submission_path))
 
     # Load model
-    model = BaselineCnn(classes_num)
+    model = Model(classes_num)
     checkpoint = torch.load(model_path)
     model.load_state_dict(checkpoint['state_dict'])
 
     if cuda:
         model.cuda()
-
-    
 
     # Data generator
     generator = TestDataGenerator(dev_hdf5_path=dev_hdf5_path,
@@ -396,12 +412,14 @@ def inference_testing_data(args):
     generate_func = generator.generate_test()
 
     # Predict
-    (outputs, audio_names) = forward(model=model, 
+    dict = forward(model=model, 
                      generate_func=generate_func, 
                      cuda=cuda, 
-                     has_target=False)
-    '''(audios_num, classes_num)'''
-
+                     return_target=False)
+    
+    audio_names = dict['audio_name']    # (audios_num,)
+    outputs = dict['output']    # (audios_num, classes_num)
+    
     predictions = np.argmax(outputs, axis=-1)    # (audios_num,)
 
     # Write result to submission csv
@@ -415,7 +433,7 @@ def inference_testing_data(args):
         
     f.close()
     
-    logging.info("Write result to {}".format(submission_path))
+    logging.info('Write result to {}'.format(submission_path))
     
 
 if __name__ == '__main__':
@@ -427,6 +445,7 @@ if __name__ == '__main__':
     parser_train.add_argument('--subdir', type=str, required=True)
     parser_train.add_argument('--workspace', type=str, required=True)
     parser_train.add_argument('--validate', action='store_true', default=False)
+    parser_train.add_argument('--holdout_fold', type=int, required=True)
     parser_train.add_argument('--cuda', action='store_true', default=False)
     parser_train.add_argument('--mini_data', action='store_true', default=False)
     
@@ -434,6 +453,7 @@ if __name__ == '__main__':
     parser_inference_validation.add_argument('--dataset_dir', type=str, required=True)
     parser_inference_validation.add_argument('--subdir', type=str, required=True)
     parser_inference_validation.add_argument('--workspace', type=str, required=True)
+    parser_inference_validation.add_argument('--holdout_fold', type=int, required=True)
     parser_inference_validation.add_argument('--iteration', type=int, required=True)
     parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
                                              
@@ -464,4 +484,4 @@ if __name__ == '__main__':
         inference_testing_data(args)
 
     else:
-        raise Exception("Error argument!")
+        raise Exception('Error argument!')

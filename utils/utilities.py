@@ -25,10 +25,10 @@ def create_logging(log_dir, filemode):
     create_folder(log_dir)
     i1 = 0
 
-    while os.path.isfile(os.path.join(log_dir, "%04d.log" % i1)):
+    while os.path.isfile(os.path.join(log_dir, '%04d.log' % i1)):
         i1 += 1
 
-    log_path = os.path.join(log_dir, "%04d.log" % i1)
+    log_path = os.path.join(log_dir, '%04d.log' % i1)
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
@@ -83,35 +83,7 @@ def inverse_scale(x, mean, std):
     return x * std + mean
 
 
-def calculate_auc(target, predict):
-    """Calculate area under curve (AUC)
-
-    Inputs:
-      target: integer array, (audios_num,)
-      predict: integer array, (audios_num,)
-
-    Outputs:
-      accuracy: float
-    """
-
-    return metrics.roc_auc_score(target, predict, average='macro')
-
-
-def calculate_ap(target, predict):
-    """Calculate average precision (AP).
-
-    Inputs:
-      target: integer array, (audios_num,)
-      predict: integer array, (audios_num,)
-
-    Outputs:
-      accuracy: float
-    """
-
-    return metrics.average_precision_score(target, predict, average='macro')
-
-
-def calculate_accuracy(target, predict):
+def calculate_accuracy(target, predict, classes_num, average=None):
     """Calculate accuracy.
 
     Inputs:
@@ -123,15 +95,27 @@ def calculate_accuracy(target, predict):
     """
 
     samples_num = len(target)
-    correct = 0
+    
+    correctness = np.zeros(classes_num)
+    total = np.zeros(classes_num)
 
     for n in range(samples_num):
+        
+        total[target[n]] += 1
+        
         if target[n] == predict[n]:
-            correct += 1
+            correctness[target[n]] += 1
 
-    accuracy = float(correct) / samples_num
+    accuracy = correctness / total
 
-    return accuracy
+    if average is None:
+        return accuracy
+        
+    elif average == 'macro':
+        return np.mean(accuracy)
+        
+    else:
+        raise Exception('Incorrect average!')
 
 
 def calculate_confusion_matrix(target, predict, classes_num):

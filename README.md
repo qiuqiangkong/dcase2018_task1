@@ -21,7 +21,9 @@ The log mel spectrogram of the scenes are shown below:
 ## Run the code
 **1. (Optional) Install dependent packages.** If you are using conda, simply run:
 
-$ conda env create -f environment.yml
+$ BACKEND="pytorch"
+
+$ conda env create -f $BACKEND/environment.yml
 
 $ conda activate py3_dcase2018_task1
 
@@ -66,7 +68,7 @@ root        : INFO     iteration: 3100, train time: 6.266 s, validate time: 2.34
 
 ## Result
 
-We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 100 ms / iteration on a GTX Titan X GPU. The model is trained for 3000 iterations. The result is shown below. 
+We use the provided training & validation split of the development data. We apply a convolutional neural network on the log mel spectrogram feature to solve this task. Training takes around 100 ms / iteration on a GTX Titan X GPU. The model is trained for 5000 iterations. The result is shown below. 
 
 ### Subtask A
 

@@ -11,7 +11,7 @@ def plot_logmel(args):
     """
 
     # Arguments & parameters
-    audio_dir = args.audio_dir
+    audios_dir = args.audios_dir
     
     sample_rate = config.sample_rate
     window_size = config.window_size
@@ -21,7 +21,7 @@ def plot_logmel(args):
     labels = config.labels
     
     # Paths
-    audio_names = os.listdir(audio_dir)
+    audio_names = os.listdir(audios_dir)
     
     # Feature extractor
     feature_extractor = LogMelExtractor(sample_rate=sample_rate, 
@@ -38,7 +38,7 @@ def plot_logmel(args):
         
             if label in audio_name:
                 
-                audio_path = os.path.join(audio_dir, audio_name)
+                audio_path = os.path.join(audios_dir, audio_name)
                 
                 feature = calculate_logmel(audio_path=audio_path, 
                                         sample_rate=sample_rate, 
@@ -62,7 +62,7 @@ def plot_logmel(args):
         col = n % cols_num
         axs[row, col].matshow(feature_list[n].T, origin='lower', aspect='auto', cmap='jet')
         axs[row, col].set_title(labels[n])
-        axs[row, col].set_ylabel('log Mel')
+        axs[row, col].set_ylabel('log mel')
         axs[row, col].yaxis.set_ticks([])
         axs[row, col].xaxis.set_ticks([0, seq_len])
         axs[row, col].xaxis.set_ticklabels(['0', '10 s'], fontsize='small')
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers(dest='mode')
     
     parser_plot_logmel = subparsers.add_parser('plot_logmel')
-    parser_plot_logmel.add_argument('--audio_dir', type=str)
+    parser_plot_logmel.add_argument('--audios_dir', type=str, required=True)
     
     args = parser.parse_args()
     

@@ -1,5 +1,7 @@
-import numpy as np
 import os
+import sys
+sys.path.insert(1, os.path.join(sys.path[0], 'utils'))
+import numpy as np
 import pandas as pd
 import argparse
 import h5py
@@ -124,7 +126,8 @@ def calculate_features(args):
     
     if data_type == 'development':
         meta_csv = os.path.join(dataset_dir, subdir, 'meta.csv')
-    else:
+        
+    elif data_type == 'leaderboard':
         evaluation_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup', 
                                       'test.txt')
     
@@ -146,7 +149,8 @@ def calculate_features(args):
 
     # Read meta csv
     if data_type == 'development':
-        [audio_names, scene_labels, identifiers, source_labels] = read_development_meta(meta_csv)
+        [audio_names, scene_labels, identifiers, source_labels] = \
+            read_development_meta(meta_csv)
         
     elif data_type == 'leaderboard':
         audio_names = read_leaderboard_meta(evaluation_csv)
@@ -167,7 +171,7 @@ def calculate_features(args):
             identifiers = [identifiers[idx] for idx in audio_indexes]
             source_labels = [source_labels[idx] for idx in audio_indexes]
         
-    print("Number of audios: {}".format(len(audio_names)))
+    print('Number of audios: {}'.format(len(audio_names)))
     
     # Create hdf5 file
     hf = h5py.File(hdf5_path, 'w')
@@ -178,10 +182,9 @@ def calculate_features(args):
         maxshape=(None, seq_len, mel_bins), 
         dtype=np.float32)
     
-    n = 0
     calculate_time = time.time()
     
-    for audio_name in audio_names:
+    for (n, audio_name) in enumerate(audio_names):
         
         print(n, audio_name)
         
@@ -203,11 +206,11 @@ def calculate_features(args):
         if False:
             plt.matshow(feature.T, origin='lower', aspect='auto', cmap='jet')
             plt.show()
-            
-        n += 1
         
     # Write meta info to hdf5
-    hf.create_dataset(name='filename', data=[s.encode() for s in audio_names], dtype='S50')
+    hf.create_dataset(name='filename', 
+                      data=[s.encode() for s in audio_names], 
+                      dtype='S50')
     
     if data_type == 'development':
         
@@ -225,8 +228,8 @@ def calculate_features(args):
 
     hf.close()
     
-    print("Write out hdf5 file to {}".format(hdf5_path))
-    print("Time spent: {} s".format(time.time() - calculate_time))
+    print('Write out hdf5 file to {}'.format(hdf5_path))
+    print('Time spent: {} s'.format(time.time() - calculate_time))
 
 
 if __name__ == '__main__':
@@ -247,5 +250,5 @@ if __name__ == '__main__':
         calculate_features(args)
         
     else:
-        raise Exception("Incorrect arguments!")
+        raise Exception('Incorrect arguments!')
         
