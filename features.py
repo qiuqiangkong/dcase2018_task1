@@ -91,7 +91,7 @@ def read_development_meta(meta_csv):
     return audio_names, scene_labels, identifiers, source_labels
     
     
-def read_leaderboard_meta(evaluation_csv):
+def read_evaluation_meta(evaluation_csv):
     
     with open(evaluation_csv, 'r') as f:
         reader = csv.reader(f)
@@ -127,7 +127,7 @@ def calculate_features(args):
     if data_type == 'development':
         meta_csv = os.path.join(dataset_dir, subdir, 'meta.csv')
         
-    elif data_type == 'leaderboard':
+    elif data_type in ['leaderboard', 'evaluation']:
         evaluation_csv = os.path.join(dataset_dir, subdir, 'evaluation_setup', 
                                       'test.txt')
     
@@ -152,8 +152,8 @@ def calculate_features(args):
         [audio_names, scene_labels, identifiers, source_labels] = \
             read_development_meta(meta_csv)
         
-    elif data_type == 'leaderboard':
-        audio_names = read_leaderboard_meta(evaluation_csv)
+    elif data_type in ['leaderboard', 'evaluation']:
+        audio_names = read_evaluation_meta(evaluation_csv)
 
     # Only use partial data when set mini_data to True
     if mini_data:
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     parser_logmel = subparsers.add_parser('logmel')
     parser_logmel.add_argument('--dataset_dir', type=str, required=True)
     parser_logmel.add_argument('--subdir', type=str, required=True)
-    parser_logmel.add_argument('--data_type', type=str, required=True, choices=['development', 'leaderboard'])
+    parser_logmel.add_argument('--data_type', type=str, required=True, choices=['development', 'leaderboard', 'evaluation'])
     parser_logmel.add_argument('--workspace', type=str, required=True)
     parser_logmel.add_argument('--mini_data', action='store_true', default=False)
     

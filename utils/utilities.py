@@ -7,6 +7,8 @@ import logging
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+import config
+
 
 def create_folder(fd):
     if not os.path.exists(fd):
@@ -182,3 +184,38 @@ def plot_confusion_matrix(confusion_matrix, title, labels, values):
     plt.ylabel('Target')
     plt.tight_layout()
     plt.show()
+
+
+def write_leaderboard_submission(submission_path, audio_names, predictions):
+    
+    ix_to_lb = config.ix_to_lb
+    
+    f = open(submission_path, 'w')	
+    f.write('Id,Scene_label\n')
+    
+    for n in range(len(audio_names)):
+        f.write('{}'.format(os.path.splitext(audio_names[n])[0]))
+        f.write(',')
+        f.write(ix_to_lb[predictions[n]])
+        f.write('\n')
+        
+    f.close()
+    
+    logging.info('Write result to {}'.format(submission_path))
+    
+     
+def write_evaluation_submission(submission_path, audio_names, predictions):
+    
+    ix_to_lb = config.ix_to_lb
+    
+    f = open(submission_path, 'w')	
+    
+    for n in range(len(audio_names)):
+        f.write('audio/{}'.format(audio_names[n]))
+        f.write('\t')
+        f.write(ix_to_lb[predictions[n]])
+        f.write('\n')
+        
+    f.close()
+    
+    logging.info('Write result to {}'.format(submission_path))

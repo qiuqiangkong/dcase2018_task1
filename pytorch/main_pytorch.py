@@ -15,9 +15,9 @@ import torch.optim as optim
 
 from data_generator import DataGenerator, TestDataGenerator
 from utilities import (create_folder, get_filename, create_logging,
-                       calculate_confusion_matrix,
-                       calculate_accuracy, plot_confusion_matrix, 
-                       print_accuracy)
+                       calculate_confusion_matrix, calculate_accuracy, 
+                       plot_confusion_matrix, print_accuracy, 
+                       write_leaderboard_submission, write_evaluation_submission)
 from models_pytorch import move_data_to_gpu, BaselineCnn, Vggish
 import config
 
@@ -274,7 +274,7 @@ def train(args):
             break
 
 
-def inference_validation(args):
+def inference_validation_data(args):
 
     # Arugments & parameters
     dataset_dir = args.dataset_dir
@@ -363,13 +363,13 @@ def inference_validation(args):
             labels=labels,
             values=class_wise_accuracy)
             
-            
-def inference_testing_data(args):
+     
+def inference_leaderboard_data(args):
     
     # Arugments & parameters
     dataset_dir = args.dataset_dir
     dev_subdir = args.dev_subdir
-    test_subdir = args.test_subdir
+    leaderboard_subdir = args.leaderboard_subdir
     workspace = args.workspace
     iteration = args.iteration
     filename = args.filename
@@ -384,14 +384,14 @@ def inference_testing_data(args):
     dev_hdf5_path = os.path.join(workspace, 'features', 'logmel', dev_subdir,
                                  'development.h5')
 
-    test_hdf5_path = os.path.join(workspace, 'features', 'logmel', test_subdir,
+    test_hdf5_path = os.path.join(workspace, 'features', 'logmel', leaderboard_subdir,
                                  'leaderboard.h5')
 
     model_path = os.path.join(workspace, 'models', dev_subdir, filename,
                               'full_train', 
                               'md_{}_iters.tar'.format(iteration))
 
-    submission_path = os.path.join(workspace, 'submissions', test_subdir, 
+    submission_path = os.path.join(workspace, 'submissions', leaderboard_subdir, 
                                    filename, 'iteration={}'.format(iteration), 
                                    'submission.csv')
                                    
@@ -407,8 +407,71 @@ def inference_testing_data(args):
 
     # Data generator
     generator = TestDataGenerator(dev_hdf5_path=dev_hdf5_path,
-                                    test_hdf5_path=test_hdf5_path, 
-                                    batch_size=batch_size)
+                                  test_hdf5_path=test_hdf5_path, 
+                                  batch_size=batch_size)
+
+    generate_func = generator.generate_test()
+
+    # Predict
+    dict = forward(model=model, 
+                   generate_func=generate_func, 
+                   cuda=cuda, 
+                   return_target=False)
+    
+    audio_names = dict['audio_name']    # (audios_num,)
+    outputs = dict['output']    # (audios_num, classes_num)
+    
+    predictions = np.argmax(outputs, axis=-1)    # (audios_num,)
+
+    # Write result to submission csv
+    write_leaderboard_submission(submission_path, audio_names, predictions)
+    
+            
+def inference_evaluation_data(args):
+    
+    # Arugments & parameters
+    dataset_dir = args.dataset_dir
+    dev_subdir = args.dev_subdir
+    eval_subdir = args.eval_subdir
+    workspace = args.workspace
+    iteration = args.iteration
+    filename = args.filename
+    cuda = args.cuda
+
+    labels = config.labels
+    ix_to_lb = config.ix_to_lb
+
+    classes_num = len(labels)
+
+    # Paths
+    dev_hdf5_path = os.path.join(workspace, 'features', 'logmel', dev_subdir,
+                                 'development.h5')
+
+    test_hdf5_path = os.path.join(workspace, 'features', 'logmel', eval_subdir,
+                                 'evaluation.h5')
+
+    model_path = os.path.join(workspace, 'models', dev_subdir, filename,
+                              'full_train', 
+                              'md_{}_iters.tar'.format(iteration))
+
+    submission_path = os.path.join(workspace, 'submissions', eval_subdir, 
+                                   filename, 'iteration={}'.format(iteration), 
+                                   'submission.csv')
+                                   
+    create_folder(os.path.dirname(submission_path))
+
+    # Load model
+    model = Model(classes_num)
+    checkpoint = torch.load(model_path)
+    model.load_state_dict(checkpoint['state_dict'])
+
+    if cuda:
+        model.cuda()
+
+    # Data generator
+    generator = TestDataGenerator(dev_hdf5_path=dev_hdf5_path,
+                                  test_hdf5_path=test_hdf5_path, 
+                                  batch_size=batch_size)
 
     generate_func = generator.generate_test()
 
@@ -426,15 +489,7 @@ def inference_testing_data(args):
     # Write result to submission csv
     f = open(submission_path, 'w')	
     
-    for n in range(len(audio_names)):
-        f.write('audio/{}'.format(audio_names[n]))
-        f.write('\t')
-        f.write(ix_to_lb[predictions[n]])
-        f.write('\n')
-        
-    f.close()
-    
-    logging.info('Write result to {}'.format(submission_path))
+    write_evaluation_submission(submission_path, audio_names, predictions)
     
 
 if __name__ == '__main__':
@@ -446,25 +501,33 @@ if __name__ == '__main__':
     parser_train.add_argument('--subdir', type=str, required=True)
     parser_train.add_argument('--workspace', type=str, required=True)
     parser_train.add_argument('--validate', action='store_true', default=False)
-    parser_train.add_argument('--holdout_fold', type=int, required=True)
+    parser_train.add_argument('--holdout_fold', type=int)
     parser_train.add_argument('--cuda', action='store_true', default=False)
     parser_train.add_argument('--mini_data', action='store_true', default=False)
     
-    parser_inference_validation = subparsers.add_parser('inference_validation')
-    parser_inference_validation.add_argument('--dataset_dir', type=str, required=True)
-    parser_inference_validation.add_argument('--subdir', type=str, required=True)
-    parser_inference_validation.add_argument('--workspace', type=str, required=True)
-    parser_inference_validation.add_argument('--holdout_fold', type=int, required=True)
-    parser_inference_validation.add_argument('--iteration', type=int, required=True)
-    parser_inference_validation.add_argument('--cuda', action='store_true', default=False)
-                                             
-    parser_inference_testing_data = subparsers.add_parser('inference_testing_data')
-    parser_inference_testing_data.add_argument('--dataset_dir', type=str, required=True)
-    parser_inference_testing_data.add_argument('--dev_subdir', type=str, required=True)
-    parser_inference_testing_data.add_argument('--test_subdir', type=str, required=True)
-    parser_inference_testing_data.add_argument('--workspace', type=str, required=True)
-    parser_inference_testing_data.add_argument('--iteration', type=int, required=True)
-    parser_inference_testing_data.add_argument('--cuda', action='store_true', default=False)
+    parser_inference_validation_data = subparsers.add_parser('inference_validation_data')
+    parser_inference_validation_data.add_argument('--dataset_dir', type=str, required=True)
+    parser_inference_validation_data.add_argument('--subdir', type=str, required=True)
+    parser_inference_validation_data.add_argument('--workspace', type=str, required=True)
+    parser_inference_validation_data.add_argument('--holdout_fold', type=int, required=True)
+    parser_inference_validation_data.add_argument('--iteration', type=int, required=True)
+    parser_inference_validation_data.add_argument('--cuda', action='store_true', default=False)
+                     
+    parser_inference_leaderboard_data = subparsers.add_parser('inference_leaderboard_data')
+    parser_inference_leaderboard_data.add_argument('--dataset_dir', type=str, required=True)
+    parser_inference_leaderboard_data.add_argument('--dev_subdir', type=str, required=True)
+    parser_inference_leaderboard_data.add_argument('--leaderboard_subdir', type=str, required=True)
+    parser_inference_leaderboard_data.add_argument('--workspace', type=str, required=True)
+    parser_inference_leaderboard_data.add_argument('--iteration', type=int, required=True)
+    parser_inference_leaderboard_data.add_argument('--cuda', action='store_true', default=False)
+                                            
+    parser_inference_evaluation_data = subparsers.add_parser('inference_evaluation_data')
+    parser_inference_evaluation_data.add_argument('--dataset_dir', type=str, required=True)
+    parser_inference_evaluation_data.add_argument('--dev_subdir', type=str, required=True)
+    parser_inference_evaluation_data.add_argument('--eval_subdir', type=str, required=True)
+    parser_inference_evaluation_data.add_argument('--workspace', type=str, required=True)
+    parser_inference_evaluation_data.add_argument('--iteration', type=int, required=True)
+    parser_inference_evaluation_data.add_argument('--cuda', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -478,11 +541,14 @@ if __name__ == '__main__':
     if args.mode == 'train':
         train(args)
 
-    elif args.mode == 'inference_validation':
-        inference_validation(args)
+    elif args.mode == 'inference_validation_data':
+        inference_validation_data(args)
+
+    elif args.mode == 'inference_leaderboard_data':
+        inference_leaderboard_data(args)
         
-    elif args.mode == 'inference_testing_data':
-        inference_testing_data(args)
+    elif args.mode == 'inference_evaluation_data':
+        inference_evaluation_data(args)
 
     else:
         raise Exception('Error argument!')
