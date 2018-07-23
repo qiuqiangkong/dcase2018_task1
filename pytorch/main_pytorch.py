@@ -16,7 +16,8 @@ import torch.optim as optim
 from data_generator import DataGenerator, TestDataGenerator
 from utilities import (create_folder, get_filename, create_logging,
                        calculate_confusion_matrix,
-                       calculate_accuracy, plot_confusion_matrix)
+                       calculate_accuracy, plot_confusion_matrix, 
+                       print_accuracy)
 from models_pytorch import move_data_to_gpu, BaselineCnn, Vggish
 import config
 
@@ -328,7 +329,8 @@ def inference_validation(args):
                                   dev_validate_csv=dev_validate_csv)
 
         generate_func = generator.generate_validate(data_type='validate', 
-                                                     devices=device)
+                                                     devices=device, 
+                                                     shuffle=False)
 
         # Inference
         dict = forward(model=model,
@@ -347,20 +349,19 @@ def inference_validation(args):
         confusion_matrix = calculate_confusion_matrix(
             targets, predictions, classes_num)
             
-        accuracy = calculate_accuracy(targets, predictions)
-        
-        class_wise_acc = np.diag(confusion_matrix) / \
-            np.sum(confusion_matrix, axis=0)
+        class_wise_accuracy = calculate_accuracy(targets, predictions, 
+                                                 classes_num)
 
+        # Print
+        print_accuracy(class_wise_accuracy, labels)
         print('confusion_matrix: \n', confusion_matrix)
-        print('averaged accuracy: {}'.format(accuracy))
 
         # Plot confusion matrix
         plot_confusion_matrix(
             confusion_matrix,
             title='Device {}'.format(device.upper()), 
             labels=labels,
-            values=class_wise_acc)
+            values=class_wise_accuracy)
             
             
 def inference_testing_data(args):

@@ -139,6 +139,16 @@ def calculate_confusion_matrix(target, predict, classes_num):
     return confusion_matrix
 
 
+def print_accuracy(class_wise_accuracy, labels):
+
+    print('{:<30}{}'.format('Scene label', 'accuracy'))
+    print('------------------------------------------------')
+    for (n, label) in enumerate(labels):
+        print('{:<30}{:.3f}'.format(label, class_wise_accuracy[n]))
+    print('------------------------------------------------')
+    print('{:<30}{:.3f}'.format('Average', np.mean(class_wise_accuracy)))
+
+
 def plot_confusion_matrix(confusion_matrix, title, labels, values):
     """Plot confusion matrix.
 
