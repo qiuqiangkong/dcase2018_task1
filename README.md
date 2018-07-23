@@ -44,26 +44,29 @@ Or run the commands in runme.sh line by line, including:
 The training looks like:
 
 <pre>
-root        : INFO     Loading data time: 7.601605415344238
-root        : INFO     Split development data to 6122 training and 2518 validation data. 
-root        : INFO     Number of train audios in specific devices ['a']: 6122
-root        : INFO     tr_acc: 0.100
-root        : INFO     Number of validate audios in specific devices ['a']: 2518
-root        : INFO     va_acc: 0.100
-root        : INFO     iteration: 0, train time: 0.006 s, validate time: 2.107 s
-root        : INFO     ------------------------------------
+Loading data time: 19.000 s
+Split development data to 6122 training and 2518 validation data. 
+Number of train audios in specific devices ['a']: 6122
+tr_acc: 0.100, tr_loss: 6.437
+Number of validate audios in specific devices ['a']: 2518
+va_acc: 0.100, va_loss: 6.378
+iteration: 0, train time: 0.118 s, validate time: 9.518 s
+------------------------------------
+Number of train audios in specific devices ['a']: 6122
+tr_acc: 0.737, tr_loss: 0.709
+Number of validate audios in specific devices ['a']: 2518
+va_acc: 0.572, va_loss: 1.222
+iteration: 100, train time: 21.682 s, validate time: 8.385 s
+------------------------------------
 ......
-root        : INFO     Number of train audios in specific devices ['a']: 6122
-root        : INFO     tr_acc: 1.000
-root        : INFO     Number of validate audios in specific devices ['a']: 2518
-root        : INFO     va_acc: 0.688
-root        : INFO     iteration: 3000, train time: 6.966 s, validate time: 2.340 s
-root        : INFO     ------------------------------------
-root        : INFO     Number of train audios in specific devices ['a']: 6122
-root        : INFO     tr_acc: 1.000
-root        : INFO     Number of validate audios in specific devices ['a']: 2518
-root        : INFO     va_acc: 0.688
-root        : INFO     iteration: 3100, train time: 6.266 s, validate time: 2.345 s
+------------------------------------
+Number of train audios in specific devices ['a']: 6122
+tr_acc: 1.000, tr_loss: 0.000
+Number of validate audios in specific devices ['a']: 2518
+va_acc: 0.680, va_loss: 1.347
+iteration: 5000, train time: 23.928 s, validate time: 8.553 s
+------------------------------------
+......
 </pre>
 
 ## Result
@@ -76,7 +79,7 @@ Averaged accuracy over 10 classes:
 
 |                   | Device A |
 |:-----------------:|:--------:|
-| averaged accuracy |   68.2%  |
+| averaged accuracy |   68.0%  |
 
 Confusion matrix:
 
@@ -88,7 +91,7 @@ Averaged accuracy over 10 classes of device A, B and C:
 
 |                   | Device A | Device B | Device C |
 |:-----------------:|:--------:|----------|----------|
-| averaged accuracy |   67.4%  | 59.4%    | 57.2%    |
+| averaged accuracy |   67.9%  | 61.7%    | 57.2%    |
 
 Confusion matrix:
 
