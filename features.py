@@ -26,7 +26,7 @@ class LogMelExtractor():
         self.melW = librosa.filters.mel(sr=sample_rate, 
                                         n_fft=window_size, 
                                         n_mels=mel_bins, 
-                                        fmin=20., 
+                                        fmin=50., 
                                         fmax=sample_rate // 2).T
     
     def transform(self, audio):

@@ -20,8 +20,6 @@ def move_data_to_gpu(x, cuda):
     if cuda:
         x = x.cuda()
 
-    x = Variable(x)
-
     return x
 
 
@@ -155,7 +153,7 @@ class VggishConvBlock(nn.Module):
     
     
 class Vggish(nn.Module):
-    def __init__(self, classes_num, stride=None):
+    def __init__(self, classes_num):
         
         super(Vggish, self).__init__()
 

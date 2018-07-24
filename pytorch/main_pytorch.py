@@ -44,6 +44,7 @@ def evaluate(model, generator, data_type, devices, max_iteration, cuda):
     # Generate function
     generate_func = generator.generate_validate(data_type=data_type, 
                                                 devices=devices, 
+                                                shuffle=True, 
                                                 max_iteration=max_iteration)
             
     # Forward
@@ -270,7 +271,7 @@ def train(args):
                 param_group['lr'] *= 0.9
                 
         # Stop learning
-        if iteration == 10000:
+        if iteration == 10001:
             break
 
 

@@ -54,12 +54,12 @@ class DataGenerator(object):
             self.train_audio_indexes = self.get_audio_indexes_from_csv(
                 dev_train_csv)
                 
-            self.valid_audio_indexes = self.get_audio_indexes_from_csv(
-                dev_validate_csv)
+            self.validate_audio_indexes = self.get_audio_indexes_from_csv(
+                dev_validateate_csv)
                 
             logging.info('Split development data to {} training and {} '
                 'validation data. '.format(len(self.train_audio_indexes), 
-                len(self.valid_audio_indexes)))
+                len(self.validate_audio_indexes)))
                 
         # Calculate scalar
         (self.mean, self.std) = calculate_scalar(
@@ -125,8 +125,8 @@ class DataGenerator(object):
 
             yield batch_x, batch_y
 
-    def generate_validate(self, data_type, devices, max_iteration=None, 
-                          shuffle=True):
+    def generate_validate(self, data_type, devices, shuffle, 
+                          max_iteration=None):
         """Generate mini-batch data for evaluation. 
         
         Args:
@@ -147,7 +147,7 @@ class DataGenerator(object):
             audio_indexes = self.train_audio_indexes
 
         elif data_type == 'validate':
-            audio_indexes = self.valid_audio_indexes
+            audio_indexes = self.validate_audio_indexes
 
         else:
             raise Exception('Invalid data_type!')
