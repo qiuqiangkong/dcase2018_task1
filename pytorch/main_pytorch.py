@@ -193,11 +193,10 @@ def train(args):
     optimizer = optim.Adam(model.parameters(), lr=1e-3, betas=(0.9, 0.999),
                            eps=1e-08, weight_decay=0.)
 
-    iteration = 0
     train_bgn_time = time.time()
 
     # Train on mini batches
-    for (batch_x, batch_y) in generator.generate_train():
+    for (iteration, (batch_x, batch_y)) in enumerate(generator.generate_train()):
 
         # Evaluate
         if iteration % 100 == 0:
@@ -237,22 +236,6 @@ def train(args):
 
             train_bgn_time = time.time()
 
-        # Move data to gpu
-        batch_x = move_data_to_gpu(batch_x, cuda)
-        batch_y = move_data_to_gpu(batch_y, cuda)
-
-        # Train
-        model.train()
-        batch_output = model(batch_x)
-        loss = F.nll_loss(batch_output, batch_y)
-
-        # Backward
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        iteration += 1
-
         # Save model
         if iteration % 1000 == 0 and iteration > 0:
 
@@ -266,12 +249,25 @@ def train(args):
             logging.info('Model saved to {}'.format(save_out_path))
             
         # Reduce learning rate
-        if iteration % 200 == 0:
+        if iteration % 200 == 0 > 0:
             for param_group in optimizer.param_groups:
                 param_group['lr'] *= 0.9
-                
+
+        # Train
+        batch_x = move_data_to_gpu(batch_x, cuda)
+        batch_y = move_data_to_gpu(batch_y, cuda)
+
+        model.train()
+        batch_output = model(batch_x)
+        loss = F.nll_loss(batch_output, batch_y)
+
+        # Backward
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
         # Stop learning
-        if iteration == 10001:
+        if iteration == 10000:
             break
 
 

@@ -3,7 +3,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 
 
 def move_data_to_gpu(x, cuda):
@@ -96,6 +95,7 @@ class BaselineCnn(nn.Module):
         init_bn(self.bn4)
 
     def forward(self, input, return_bottleneck=False):
+        
         (_, seq_len, mel_bins) = input.shape
 
         x = input.view(-1, 1, seq_len, mel_bins)
@@ -171,7 +171,8 @@ class Vggish(nn.Module):
 
         init_layer(self.fc_final)
 
-    def forward(self, input, return_bottleneck=False):
+    def forward(self, input):
+        
         (_, seq_len, mel_bins) = input.shape
 
         x = input.view(-1, 1, seq_len, mel_bins)
