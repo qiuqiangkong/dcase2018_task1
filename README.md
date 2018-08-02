@@ -74,6 +74,8 @@ $ conda env create -f $BACKEND/environment.yml
 
 $ conda activate py3_dcase2018_task1
 
+<span style="color:red">(We developed this system with python 3. If you are using pytorch as backend then pytorch 0.4.0 is required.)</span>
+
 **2. Then simply run:**
 
 $ ./runme.sh
@@ -148,6 +150,9 @@ Confusion matrix:
 ## Summary
 This codebase provides a convolutional neural network (CNN) for DCASE 2018 challenge Task 1. 
 
-### External link
+## FAQ
+If you met running out of GPU memory error, then try reduce batch_size. 
+
+## External link
 
 The official baseline system implemented using Keras can be found https://github.com/DCASE-REPO/dcase2018_baseline
