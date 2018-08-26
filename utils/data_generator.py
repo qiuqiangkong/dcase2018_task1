@@ -144,10 +144,10 @@ class DataGenerator(object):
         batch_size = self.batch_size
 
         if data_type == 'train':
-            audio_indexes = self.train_audio_indexes
+            audio_indexes = np.array(self.train_audio_indexes)
 
         elif data_type == 'validate':
-            audio_indexes = self.validate_audio_indexes
+            audio_indexes = np.array(self.validate_audio_indexes)
 
         else:
             raise Exception('Invalid data_type!')
