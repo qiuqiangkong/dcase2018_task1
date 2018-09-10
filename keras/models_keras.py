@@ -1,5 +1,6 @@
 from keras.models import Model
-from keras.layers import Input, Reshape, Dense, Conv2D, MaxPooling2D, BatchNormalization, Activation, GlobalMaxPooling2D
+from keras.layers import (Input, Reshape, Dense, Conv2D, MaxPooling2D, 
+                          BatchNormalization, Activation, GlobalMaxPooling2D)
 
 
 def BaselineCnn(seq_len, mel_bins, classes_num):
